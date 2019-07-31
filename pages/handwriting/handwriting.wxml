@@ -1,0 +1,160 @@
+<!--pages/admin/handwriting/handwriting.wxml-->
+<view class="container" style="width:100%;height:{{H+'px'}};">
+  <view class="container-in" style="width:{{canvasW+'px'}};height:{{canvasH+'px'}};background:{{bgColor}};">
+    <!--涂鸦画布-->
+    <view wx:if="{{showHandwriting}}" class="move-canvas">
+      <canvas canvas-id="handwriting" style="width:100%;height:100%;" disable-scroll="true" bindtouchstart="touchStart" bindtouchmove="touchMove" bindtouchend="touchEnd">
+      </canvas>
+    </view>
+
+    <!-- 默认结果展示区 -->
+    <view class="canvas-result">
+      <!-- 底图 -->
+      <image src="{{imgSrc}}" style="width:100%;height:100%;display:block;" mode="aspectFit"></image>
+      <!-- 图片展示区域 -->
+      <view class="action-result" style="width:100%;height:100%;">
+        <block wx:for="{{operateArray}}" wx:key="{{item.content}}">
+          <!-- 文字 -->
+          <view class="word-wrap" wx:if="{{item.itemType=='text'}}" style="width:{{item.style.width+'px'}};position:absolute;left:{{item.style.left+'px'}};top:{{item.style.top+'px'}};color:{{item.style.color}};font-size:{{item.style.fontSize+'px'}};line-height:{{item.style.lineHeight+'px'}};text-align:center;z-index:6;">{{item.content}}</view>
+          <!-- 图片 -->
+          <view wx:if="{{item.itemType=='image'}}" style="width:100%;height:100%;position:absolute;left:0;top:0;z-index:5;">
+            <image src="{{item.src}}" style="width:100%;height:100%;display:block;"></image>
+          </view>
+        </block>
+      </view>
+    </view>
+
+    <!-- 文本 -->
+    <view class="text-model" wx:if="{{!txtFinish}}">
+      <!-- 拖动区 -->
+      <view wx:for="{{interimArray}}" wx:key="{{item.content}}" class="text-area-move" style="width:{{item.style.width+'px'}};left:{{item.style.left+'px'}};top:{{item.style.top+'px'}};font-size:{{item.style.fontSize+'px'}};color:{{item.style.color}};line-height:{{item.style.lineHeight+'px'}};">
+        <view class="textarea word-wrap" bindtouchstart="_textareaTouchStart" bindtouchmove="_textareaTouchMove" data-index="{{index}}" style="width:{{item.style.width+'px'}};color:{{item.style.color}};">{{item.content||'请输入文字'}}</view>
+        <view bindtap="_deletTxt" data-index="{{index}}" class="delete-txt">×</view>
+      </view>
+    </view>
+
+  </view>
+</view>
+
+<!-- 文本输入区 -->
+<view wx:if="{{showInput&&!txtFinish}}" class="text-input-bg">
+  <textarea class="show-text word-wrap" style='font-size:{{fontSize}}px;' value="{{interimArray[selectTxtIndex].content}}" placeholder="请输入文字" fixed auto-focus maxlength="-1" bindlinechange="_linechange" bindconfirm="_bindconfirm" bindinput="_bindinput"></textarea>
+  <view class="text-input-action">
+    <view></view>
+    <view catchtap="_confirmBtn" style="padding:20rpx;">确定</view>
+  </view>
+</view>
+
+<!-- 最终生成画布 -->
+<view class="base-img-bg">
+  <canvas class="base-img" canvas-id="baseImg" style="width:{{canvasW*2+'px'}};height:{{canvasH*2+'px'}};background:{{bgColor}};" disable-scroll="true"></canvas>
+</view>
+<!--画布工具区域-->
+<view class="canvas_tools">
+  <!-- 默认工具 -->
+  <view wx:if="{{!showHandwriting && txtFinish && !selectBG}}" class="paint-tools">
+    <view class="box box1 {{operateArray.length==0?'opacity5':''}}" bindtap="{{operateArray.length==0?'':'_revoke'}}" hover-class='opacity5'>
+      <view class="ico">
+        <image src="../../images/icon1.png" mode='widthFix'></image>
+      </view>
+      <text>撤销</text>
+    </view>
+    <view class="paintbrush">
+      <view class="box box4" bindtap="_selectBG" hover-class='opacity5'>
+        <view class="ico">
+          <image src="../../images/ico01.png" style='width:48rpx;' mode='widthFix'></image>
+        </view>
+        <text>背景</text>
+      </view>
+      <view class="box box4" bindtap="_penSelect" hover-class='opacity5'>
+        <view class="ico">
+          <image src="../../images/icon2.png" mode='widthFix'></image>
+        </view>
+        <text>涂鸦</text>
+      </view>
+      <view class="box box2" bindtap="_addArrow" hover-class='opacity5'>
+        <view class="ico">
+          <image src="../../images/icon4.png" style='width:45rpx;' mode='widthFix'></image>
+        </view>
+        <text>箭头</text>
+      </view>
+      <view class="box box3" bindtap="_addText" hover-class='opacity5'>
+        <view class="ico">
+          <image src="../../images/icon3.png" style='width:45rpx;' mode='widthFix'></image>
+        </view>
+        <text>文字</text>
+      </view>
+    </view>
+    <view class="box box5" bindtap="_saveImg" hover-class='opacity5'>保存</view>
+  </view>
+
+  <!-- 背景工具 -->
+  <view wx:if="{{selectBG}}" class="paint-pencil">
+    <view class="box box1 {{!!imgSrc||currentbgColor!=1?'':'opacity5'}}" bindtap="{{!!imgSrc||currentbgColor!=1?'_lastCanvasBG':''}}" hover-class='opacity5'>
+      <view class="ico">
+        <image src="../../images/icon1.png" mode='widthFix'></image>
+      </view>
+      <text>撤销</text>
+    </view>
+
+    <view class="box box1" bindtap="_selectImg" hover-class='opacity5'>
+      <view class="ico opacity5" style='width:45rpx;'>
+        <image src="../../images/icon5.png" mode='widthFix'></image>
+      </view>
+    </view>
+
+    <view class="paintbrush">
+      <view wx:for="{{color}}" wx:key="{{item}}" catchtap="_selectColorBG" data-color="{{index}}" class="paint-color {{index==currentbgColor?'selected':''}}" style="background:{{item}};"></view>
+    </view>
+
+    <view class="box box5" bindtap="_saveCanvasBG" hover-class='opacity5'>确定</view>
+  </view>
+
+  <!-- 笔刷工具 -->
+  <view wx:if="{{showHandwriting}}" class="paint-pencil">
+    <view class="box box1 {{interimArray.length==0?'opacity5':''}}" bindtap="{{interimArray.length==0?'':'_lastCanvas'}}" hover-class='opacity5'>
+      <view class="ico">
+        <image src="../../images/icon1.png" mode='widthFix'></image>
+      </view>
+      <text>撤销</text>
+    </view>
+
+    <view>
+      <view wx:if="{{!addArrow}}" class="paintbrush" style='margin-bottom:10rpx;'>
+        <view wx:for="{{param}}" wx:key="{{item}}" catchtap="_selectparam" data-index="{{index}}" class="paint-large {{index==currentparam?'selected':''}}">
+          <view style="width:{{(index+3)*2}}px;height:{{(index+3)*2}}px;background:{{index==currentparam?color[currentColor]:'#000'}};border: 1rpx solid #000;"></view>
+        </view>
+      </view>
+      <view class="paintbrush">
+        <view wx:for="{{color}}" wx:key="{{item}}" catchtap="_selectColor" data-color="{{index}}" class="paint-color {{index==currentColor?'selected':''}}" style="background:{{item}};"></view>
+      </view>
+    </view>
+
+    <view class="box box5" bindtap="_saveCanvas" hover-class='opacity5'>确定</view>
+  </view>
+
+  <!-- 文字工具 -->
+  <view wx:if="{{!txtFinish}}" class="paint-pencil">
+    <view class="box box3" bindtap="_addText" hover-class='opacity5'>
+      <view class="ico">
+        <image src="../../images/icon3.png" style='width:45rpx;' mode='widthFix'></image>
+      </view>
+      <text>添加</text>
+    </view>
+
+
+    <view class="paintbrush">
+      <view wx:for="{{color}}" wx:key="{{item}}" catchtap="_selectColor" data-color="{{index}}" class="paint-color font {{index==currentColor?'selected':''}}" style="background:{{item}};"></view>
+    </view>
+
+    <!-- <view class="box box3">
+      <view class="font-size">  
+        <view class="font-size-btn" catchtap="_reducefont" hover-class='opacity5'>-</view>
+        <view>{{fontSize}}号</view>
+        <view class="font-size-btn" catchtap="_addfont" hover-class='opacity5'>+</view>
+      </view>
+    </view> -->
+
+    <view class="box box5" style='margin-left:0;' bindtap="_saveTxt" hover-class='opacity5'>确定</view>
+  </view>
+</view>

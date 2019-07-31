@@ -1,0 +1,12 @@
+{
+  "pages": [
+    "pages/handwriting/handwriting"
+  ],
+  "window": {
+    "backgroundTextStyle": "light",
+    "navigationBarBackgroundColor": "#0090ff",
+    "navigationBarTitleText": "小毛驴",
+    "navigationBarTextStyle": "white",
+    "backgroundColor": "#edf0f3"
+  }
+}
